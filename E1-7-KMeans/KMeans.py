@@ -8,12 +8,16 @@ from scipy.optimize import minimize
 
 
 def generate_test_data(cluster_seeds: np.ndarray, n, max_dif):
-    dim = cluster_seeds.shape[1] if len(cluster_seeds.shape) >= 2 else cluster_seeds.shape[0]
+    dim = cluster_seeds.shape[1]
     array = np.zeros((n * cluster_seeds.shape[0], dim))
     index = 0
     for seed in cluster_seeds:
         for i in range(n):
-            array[index] += seed + np.random.choice([-1, 1]) * max_dif * np.random.random(dim)
+            while True:
+                v = seed + np.random.choice([-1, 1], 2) *  max_dif * np.random.uniform(size=dim)
+                if np.linalg.norm(seed - v, ord=2) <= max_dif:
+                    break
+            array[index] += v
             index += 1
 
     return array
