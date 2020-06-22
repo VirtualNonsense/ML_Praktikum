@@ -8,6 +8,7 @@ import logging
 import os
 
 from matplotlib import colors as mpl_colors
+from scipy.optimize import minimize
 
 
 def generate_test_data(cluster_seeds, n, max_dif):
@@ -24,7 +25,7 @@ def generate_test_data(cluster_seeds, n, max_dif):
 
 # noinspection PyArgumentList
 class KMeansClassifier:
-    def __init__(self, k: int, train_data: np.ndarray, norm: int = 2, method="Nelder–Mead", cb0=None):
+    def __init__(self, k: int, train_data: np.ndarray, norm: int = 2, method='Nelder-Mead', cb0=None):
         self.k = k
         self.train_data = train_data
         self.norm = norm
@@ -35,6 +36,14 @@ class KMeansClassifier:
                                                                                          tra_data.max())
 
         self.assignment_table = self.__generate_assignment_table(self.init_code_book, self.train_data)
+
+        self.result = minimize(self.__J, self.init_code_book.reshape(k*tra_data.shape[1]), method=method)
+        if not self.result.success:
+            logging.critical("unable to minimize")
+            logging.critical(self.result)
+
+        self.optimized_code_book = self.result.x.reshape(self.init_code_book.shape)
+
 
     @staticmethod
     def __generate_init_code_book(k, dim, min_val, max_val):
@@ -60,6 +69,13 @@ class KMeansClassifier:
                 lowest_distance_index = cluster_index
         return lowest_distance_index
 
+    def __J(self, code_book_vector):
+        tmp_code_book = code_book_vector.reshape(self.init_code_book.shape)
+        J = 0
+        for tv_i, train_vector in enumerate(self.train_data):
+            for cv_i, cluster_vector in enumerate(tmp_code_book):
+                J += self.assignment_table[tv_i, cv_i] * np.linalg.norm(train_vector - cluster_vector, ord=self.norm)
+        return J
 
 
 if __name__ == '__main__':
@@ -73,7 +89,8 @@ if __name__ == '__main__':
 
     # setup test data
     cl_se = np.array([[1, 1],
-                      [1, 6]])
+                      [1, 6],
+                      [6, 6]])
     tra_data = generate_test_data(cl_se, 6, 1)
 
     # generate color dict
@@ -83,7 +100,7 @@ if __name__ == '__main__':
     legend_patches = [patches.Patch(color=color_dict[key], label=key) for key in color_dict.keys()]
 
     # init classifier
-    classifier = KMeansClassifier(cl_se.shape[0], tra_data)
+    classifier = KMeansClassifier(cl_se.shape[0], tra_data, cb0= cl_se)
 
     for i, label in enumerate(labels):
         legend_patches.append(ax0.plot(cl_se[i, 0],
@@ -98,7 +115,14 @@ if __name__ == '__main__':
                                        linestyle=" ",
                                        marker='^',
                                        color=colors[label],
-                                       label=f"code book vector {label}")[0])
+                                       label=f"initial code book vector {label}")[0])
+
+        legend_patches.append(ax0.plot(classifier.optimized_code_book[i, 0],
+                                       classifier.optimized_code_book[i, 1],
+                                       linestyle=" ",
+                                       marker='x',
+                                       color=colors[label],
+                                       label=f"optimized code book vector {label}")[0])
 
         legend_patches.append(ax0.plot(classifier.train_data[classifier.assignment_table[:, i] == 1, 0],
                                        classifier.train_data[classifier.assignment_table[:, i] == 1, 1],
@@ -106,8 +130,6 @@ if __name__ == '__main__':
                                        marker='.',
                                        color=colors[label],
                                        label=f"train data assigned to {label}")[0])
-
-
 
     # plot newly classified data
     plt.legend(handles=legend_patches)
