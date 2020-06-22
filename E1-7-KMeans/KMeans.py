@@ -1,9 +1,5 @@
 import numpy as np
-import pandas as pd
-import typing
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-import random
 import logging
 import os
 
@@ -55,12 +51,15 @@ class KMeansClassifier:
                                                                                          tra_data.max())
 
         # self.maximize_expectation(max_iterations, epsilon, method)
-        self.optimized_code_book, self.assignment_matrix = self.expectation_maximization(self.init_code_book,
-                                                                                         self.train_data, epsilon,
-                                                                                         max_iterations,
-                                                                                         allow_code_book_pruning)
+        self.optimized_code_book, self.assignment_matrix, self.code_book_history = self.expectation_maximization(
+            self.init_code_book,
+            self.train_data, epsilon,
+            max_iterations,
+            allow_code_book_pruning)
 
-    def predict_cluster(self, data: np.ndarray):
+    def predict_cluster(self, data: np.ndarray, code_book=None):
+        if code_book is not None:
+            return self.__generate_assignment_table(code_book, data)
         return self.__generate_assignment_table(self.optimized_code_book, data)
 
     def expectation_maximization(self, code_book: np.ndarray, train_data: np.ndarray, epsilon: float,
@@ -68,6 +67,7 @@ class KMeansClassifier:
         iteration = 0
         assignment_matrix = None
         old_score = 0
+        code_book_history = [code_book]
         while iteration < max_iteration:
             assignment_matrix = self.__generate_assignment_table(code_book, train_data)
             code_book = self.__optimize_code_book(code_book, train_data, assignment_matrix, allow_code_book_pruning)
@@ -77,8 +77,9 @@ class KMeansClassifier:
             old_score = score
             if dif < epsilon:
                 break
+            code_book_history.append(code_book)
             iteration += 1
-        return code_book, assignment_matrix
+        return code_book, assignment_matrix, code_book_history
 
     @staticmethod
     def __generate_init_code_book(k, dim, min_val, max_val):
