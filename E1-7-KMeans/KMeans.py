@@ -26,24 +26,36 @@ def generate_test_data(cluster_seeds, n, max_dif):
 # noinspection PyArgumentList
 class KMeansClassifier:
     def __init__(self, k: int, train_data: np.ndarray, norm: int = 2, method='Nelder-Mead', cb0=None):
+        """
+        This classifier tries to split a given data set into k classes, by assigning them to the point of mass of the
+        nearest cluster.
+        :param k: amount of classes
+        :param train_data: data used for training
+        :param norm: used for determining the distance between points
+        :param method: used method for minimize solver. The Nelder-Mead method works just fine for most circumstances
+        :param cb0: initial guess for the initial cluster points. this may drasticly improve the results because if unset
+        the classifier will pick code book at random
+        """
+        # assign values
         self.k = k
         self.train_data = train_data
         self.norm = norm
         self.method = method
 
+        # get init code_book
         self.init_code_book = cb0 if cb0 is not None else self.__generate_init_code_book(k, train_data.shape[1],
                                                                                          train_data.min(),
                                                                                          tra_data.max())
-
+        # assign trainings data to nearest code book vector
         self.assignment_table = self.__generate_assignment_table(self.init_code_book, self.train_data)
 
-        self.result = minimize(self.__J, self.init_code_book.reshape(k*tra_data.shape[1]), method=method)
+        # optimize code book vector
+        self.result = minimize(self.__J, self.init_code_book.reshape(k * tra_data.shape[1]), method=method)
         if not self.result.success:
             logging.critical("unable to minimize")
             logging.critical(self.result)
 
         self.optimized_code_book = self.result.x.reshape(self.init_code_book.shape)
-
 
     @staticmethod
     def __generate_init_code_book(k, dim, min_val, max_val):
@@ -100,8 +112,9 @@ if __name__ == '__main__':
     legend_patches = [patches.Patch(color=color_dict[key], label=key) for key in color_dict.keys()]
 
     # init classifier
-    classifier = KMeansClassifier(cl_se.shape[0], tra_data, cb0= cl_se)
+    classifier = KMeansClassifier(cl_se.shape[0], tra_data, cb0=cl_se)
 
+    # plot data so far
     for i, label in enumerate(labels):
         legend_patches.append(ax0.plot(cl_se[i, 0],
                                        cl_se[i, 1],
@@ -124,8 +137,9 @@ if __name__ == '__main__':
                                        color=colors[label],
                                        label=f"optimized code book vector {label}")[0])
 
-        legend_patches.append(ax0.plot(classifier.train_data[classifier.assignment_table[:, i] == 1, 0],
-                                       classifier.train_data[classifier.assignment_table[:, i] == 1, 1],
+        assigned_cluster = classifier.assignment_table[:, i] == 1
+        legend_patches.append(ax0.plot(classifier.train_data[assigned_cluster, 0],
+                                       classifier.train_data[assigned_cluster, 1],
                                        linestyle=" ",
                                        marker='.',
                                        color=colors[label],
