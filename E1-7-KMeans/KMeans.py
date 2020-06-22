@@ -11,8 +11,8 @@ from matplotlib import colors as mpl_colors
 from scipy.optimize import minimize
 
 
-def generate_test_data(cluster_seeds, n, max_dif):
-    dim = cluster_seeds.shape[1]
+def generate_test_data(cluster_seeds: np.ndarray, n, max_dif):
+    dim = cluster_seeds.shape[1] if len(cluster_seeds.shape) >= 2 else cluster_seeds.shape[0]
     array = np.zeros((n * cluster_seeds.shape[0], dim))
     index = 0
     for seed in cluster_seeds:
@@ -56,6 +56,9 @@ class KMeansClassifier:
             logging.critical(self.result)
 
         self.optimized_code_book = self.result.x.reshape(self.init_code_book.shape)
+
+    def predict_cluster(self, data: np.ndarray):
+        return self.__generate_assignment_table(self.optimized_code_book, data)
 
     @staticmethod
     def __generate_init_code_book(k, dim, min_val, max_val):
@@ -103,18 +106,30 @@ if __name__ == '__main__':
     cl_se = np.array([[1, 1],
                       [1, 6],
                       [6, 6]])
-    tra_data = generate_test_data(cl_se, 6, 1)
+    tra_data = generate_test_data(cl_se, 100, 1)
 
     # generate color dict
     labels = np.unique(list(range(cl_se.shape[0])))
     colors = np.random.choice(list(mpl_colors.XKCD_COLORS.keys()), size=len(labels))
     color_dict = dict(zip(labels, colors))
-    legend_patches = [patches.Patch(color=color_dict[key], label=key) for key in color_dict.keys()]
+    legend_patches = []
 
     # init classifier
     classifier = KMeansClassifier(cl_se.shape[0], tra_data, cb0=cl_se)
 
-    # plot data so far
+    # generate test data
+    # com = np.array(center_of_mass(classifier.optimized_code_book))
+    com = np.mean(classifier.optimized_code_book, axis=0)
+    test_data = generate_test_data(com, 50, 3)
+
+    test_data_assigned = classifier.predict_cluster(test_data)
+    legend_patches.append(ax0.plot(com[0],
+                                   com[1],
+                                   linestyle=" ",
+                                   marker='+',
+                                   color="white",
+                                   label=f"center of mass")[0])
+
     for i, label in enumerate(labels):
         legend_patches.append(ax0.plot(cl_se[i, 0],
                                        cl_se[i, 1],
@@ -145,6 +160,13 @@ if __name__ == '__main__':
                                        color=colors[label],
                                        label=f"train data assigned to {label}")[0])
 
-    # plot newly classified data
+        assigned_cluster = test_data_assigned[:, i] == 1
+        legend_patches.append(ax0.plot(test_data[assigned_cluster, 0],
+                                       test_data[assigned_cluster, 1],
+                                       linestyle=" ",
+                                       marker='1',
+                                       color=colors[label],
+                                       label=f"test data assigned to {label}")[0])
+
     plt.legend(handles=legend_patches)
     plt.show()
