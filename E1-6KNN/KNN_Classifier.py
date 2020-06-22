@@ -86,8 +86,8 @@ if __name__ == '__main__':
 
     # generate color dict
     labels = np.unique(tr_data.labels)
-    colors = list(mpl_colors.CSS4_COLORS.keys())
-    color_dict = dict(zip(labels, np.random.choice(colors, size=len(labels))))
+    colors = np.random.choice(list(mpl_colors.CSS4_COLORS.keys()), size=len(labels))
+    color_dict = dict(zip(labels, colors))
 
     # plot known data
     fig, ax = plt.subplots(1, 1)
