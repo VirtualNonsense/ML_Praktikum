@@ -26,11 +26,6 @@ if __name__ == '__main__':
     # set loglevel
     logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
-    # generate color dict
-    labels = np.unique(list(range(cl_se.shape[0])))
-    colors = np.random.choice(list(mpl_colors.CSS4_COLORS.keys()), size=len(labels))
-    color_dict = dict(zip(labels, colors))
-
     # init plot
     plt.style.use("dark_background")
     fig = plt.figure()
@@ -40,6 +35,11 @@ if __name__ == '__main__':
     cl_se = np.array([[1, 1],
                       [1, 6]])
     tra_data = generate_test_data(cl_se, 6, 2)
+
+    # generate color dict
+    labels = np.unique(list(range(cl_se.shape[0])))
+    colors = np.random.choice(list(mpl_colors.CSS4_COLORS.keys()), size=len(labels))
+    color_dict = dict(zip(labels, colors))
 
     # classify unknown data
 
