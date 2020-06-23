@@ -7,6 +7,21 @@ import typing
 from matplotlib import colors as mpl_colors
 
 
+def __get_unique_choice(samples, choose:int):
+    if len(np.unique(samples)) < choose:
+        raise ValueError("impossible task")
+    if len(np.unique(samples)) == choose:
+        return np.unique(samples)
+    a = []
+    for _i in range(choose):
+        while True:
+            c = np.random.choice(np.unique(samples), size=1)
+            if c not in a:
+                break
+        a.append(c[0])
+    return a
+
+
 def __generate_test_data(cluster_seeds: np.ndarray, n, max_dif):
     dim = cluster_seeds.shape[1]
     array = np.zeros((n * cluster_seeds.shape[0], dim))
@@ -277,9 +292,9 @@ if __name__ == '__main__':
     # generate color dict
     labels = np.unique(list(range(amount_cluster)))
     if len(labels) > len(mpl_colors.TABLEAU_COLORS.keys()):
-        colors = np.random.choice(list(mpl_colors.XKCD_COLORS.keys()), size=len(labels))
+        colors = __get_unique_choice(list(mpl_colors.XKCD_COLORS.keys()), len(labels))
     else:
-        colors = np.random.choice(list(mpl_colors.TABLEAU_COLORS.keys()), size=len(labels))
+        colors = __get_unique_choice(list(mpl_colors.TABLEAU_COLORS.keys()), len(labels))
     color_dict = dict(zip(labels, colors))
 
     # init classifier
