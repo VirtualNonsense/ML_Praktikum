@@ -10,6 +10,22 @@ import os
 from matplotlib import colors as mpl_colors
 
 
+# noinspection DuplicatedCode
+def __get_unique_choice(samples, choose: int):
+    if len(np.unique(samples)) < choose:
+        raise ValueError("impossible task")
+    if len(np.unique(samples)) == choose:
+        return np.unique(samples)
+    a = []
+    for _i in range(choose):
+        while True:
+            c = np.random.choice(np.unique(samples), size=1)
+            if c not in a:
+                break
+        a.append(c[0])
+    return a
+
+
 def generate_test_data(data: pd.DataFrame):
     data_labels = np.unique(tr_data.columns[1:])
     t = [[] for _ in data_labels]
@@ -86,7 +102,7 @@ if __name__ == '__main__':
 
     # generate color dict
     labels = np.unique(tr_data.labels)
-    colors = np.random.choice(list(mpl_colors.CSS4_COLORS.keys()), size=len(labels))
+    colors = __get_unique_choice(list(mpl_colors.XKCD_COLORS.keys()), len(labels))
     color_dict = dict(zip(labels, colors))
 
     # plot known data
