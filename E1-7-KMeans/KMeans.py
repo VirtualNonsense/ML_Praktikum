@@ -5,7 +5,6 @@ import os
 import typing
 
 from matplotlib import colors as mpl_colors
-from scipy.optimize import minimize
 
 
 def __generate_test_data(cluster_seeds: np.ndarray, n, max_dif):
