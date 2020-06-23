@@ -270,7 +270,7 @@ if __name__ == '__main__':
     test_data_points = 100
 
     # classifier parameter
-    max_iterations = 15
+    m_iterations = 15
 
     #####################################################################################
     # boring stuff to test classifier and plot results
@@ -301,7 +301,7 @@ if __name__ == '__main__':
     color_dict = dict(zip(labels, colors))
 
     # init classifier
-    classifier = KMeansClassifier(amount_cluster, tra_data, max_iterations=max_iterations)
+    classifier = KMeansClassifier(amount_cluster, tra_data, max_iterations=m_iterations)
 
     # get predicted assignment of testdata
     cl_se_predicted = classifier.predict_cluster(cl_se)
