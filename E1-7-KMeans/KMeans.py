@@ -12,7 +12,7 @@ def __generate_test_data(cluster_seeds: np.ndarray, n, max_dif):
     array = np.zeros((n * cluster_seeds.shape[0], dim))
     index = 0
     for seed in cluster_seeds:
-        for i in range(n):
+        for _i in range(n):
             while True:
                 v = seed + np.random.choice([-1, 1], 2) * 2 * max_dif * np.random.uniform(size=dim)
                 if np.linalg.norm(seed - v, ord=2) <= max_dif:
@@ -89,7 +89,7 @@ class KMeansClassifier:
 
     def expectation_maximization(self, code_book: np.ndarray, train_data: np.ndarray, epsilon: float,
                                  max_iteration: int, allow_code_book_pruning: bool = False) -> typing.Tuple[
-        np.ndarray, np.ndarray, typing.List[np.ndarray]]:
+                                 np.ndarray, np.ndarray, typing.List[np.ndarray]]:
         """
         Function optimise the code book.
         :param code_book: Initial guesses for the code_book
@@ -219,11 +219,11 @@ class KMeansClassifier:
         :param train_data:
         :return:
         """
-        J = 0
+        _j = 0
         for tv_i, train_vector in enumerate(train_data):
             for cv_i, cluster_vector in enumerate(code_book):
-                J += assignment_matrix[tv_i, cv_i] * np.linalg.norm(train_vector - cluster_vector, ord=self.norm)
-        return J
+                _j += assignment_matrix[tv_i, cv_i] * np.linalg.norm(train_vector - cluster_vector, ord=self.norm)
+        return _j
 
 
 if __name__ == '__main__':
@@ -240,7 +240,7 @@ if __name__ == '__main__':
     train_d_points = 10
 
     # cluster used for classifier
-    k = train_d_origins
+    amount_cluster = train_d_origins
 
     # radius to spawn in train data origins around origin origin
     train_d_origin_diff = 50
@@ -274,7 +274,7 @@ if __name__ == '__main__':
     tra_data = __generate_test_data(cl_se, train_d_points, train_d_diff)
 
     # generate color dict
-    labels = np.unique(list(range(k)))
+    labels = np.unique(list(range(amount_cluster)))
     if len(labels) > len(mpl_colors.TABLEAU_COLORS.keys()):
         colors = np.random.choice(list(mpl_colors.XKCD_COLORS.keys()), size=len(labels))
     else:
@@ -282,7 +282,7 @@ if __name__ == '__main__':
     color_dict = dict(zip(labels, colors))
 
     # init classifier
-    classifier = KMeansClassifier(k, tra_data)
+    classifier = KMeansClassifier(amount_cluster, tra_data)
 
     # get predicted assignment of testdata
     cl_se_predicted = classifier.predict_cluster(cl_se)
