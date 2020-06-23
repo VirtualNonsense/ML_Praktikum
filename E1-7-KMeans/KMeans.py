@@ -137,7 +137,7 @@ class KMeansClassifier:
                 break
             code_book_history.append(code_book)
             iteration += 1
-        if iteration > max_iteration:
+        if iteration >= max_iteration:
             logging.warning("max iteration has been exceeded ")
         return code_book, assignment_matrix, code_book_history
 
