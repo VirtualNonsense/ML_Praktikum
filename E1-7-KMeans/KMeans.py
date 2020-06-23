@@ -265,6 +265,7 @@ if __name__ == '__main__':
     plt.style.use("dark_background")
     fig = plt.figure()
     ax0 = fig.add_subplot(1, 1, 1)
+    ax0.set_title("K Means Classifier Test")
 
     # setup test data
     # please notice, that in some cases the generated data is kinda hard to split.
