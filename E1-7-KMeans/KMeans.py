@@ -8,7 +8,7 @@ from matplotlib import colors as mpl_colors
 from scipy.optimize import minimize
 
 
-def generate_test_data(cluster_seeds: np.ndarray, n, max_dif):
+def __generate_test_data(cluster_seeds: np.ndarray, n, max_dif):
     dim = cluster_seeds.shape[1]
     array = np.zeros((n * cluster_seeds.shape[0], dim))
     index = 0
@@ -240,8 +240,8 @@ if __name__ == '__main__':
     # please notice, that in some cases the generated data is kinda hard to split.
     # try again in this case :)
     diff = 50
-    cl_se = generate_test_data(np.array([10, 10]).reshape((1, 2)), 3, diff)
-    tra_data = generate_test_data(cl_se, 100, diff/4)
+    cl_se = __generate_test_data(np.array([10, 10]).reshape((1, 2)), 3, diff)
+    tra_data = __generate_test_data(cl_se, 100, diff / 4)
 
     # generate color dict
     labels = np.unique(list(range(cl_se.shape[0])))
@@ -261,7 +261,7 @@ if __name__ == '__main__':
     cb_center_of_mass = np.mean(classifier.optimized_code_book, axis=0)
     tra_data_center_of_mass = np.mean(tra_data, axis=0)
     # generate data to get predictions for
-    test_data = generate_test_data(classifier.optimized_code_book, 100, diff/4)
+    test_data = __generate_test_data(classifier.optimized_code_book, 100, diff / 4)
 
     # get prediction
     test_data_assigned = classifier.predict_cluster(test_data)
