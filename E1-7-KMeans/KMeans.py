@@ -228,6 +228,37 @@ class KMeansClassifier:
 
 
 if __name__ == '__main__':
+    #####################################################################################
+    # interesting parameter to play with
+    #####################################################################################
+    # train data origin origin
+    train_d_origin_origin_spawn = [10, 10]
+
+    # amount origin origin descendants
+    train_d_origins = 5
+
+    # amout of train data points around origin
+    train_d_points = 10
+
+    # cluster used for classifier
+    k = train_d_origins
+
+    # radius to spawn in train data origins around origin origin
+    train_d_origin_diff = 50
+
+    # radius to spawn train data around data origins
+    train_d_diff = train_d_origin_diff / 4
+
+    # radius to spawn test data around code_book vectors
+    test_d_diff = train_d_origin_diff / 4
+
+    # test data per cb vector
+    test_data_points = 100
+
+    #####################################################################################
+    # boring stuff to test classifier and plot results
+    #####################################################################################
+
     # set loglevel
     logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
@@ -239,12 +270,12 @@ if __name__ == '__main__':
     # setup test data
     # please notice, that in some cases the generated data is kinda hard to split.
     # try again in this case :)
-    diff = 50
-    cl_se = __generate_test_data(np.array([10, 10]).reshape((1, 2)), 3, diff)
-    tra_data = __generate_test_data(cl_se, 100, diff / 4)
+    cl_se = __generate_test_data(np.array(train_d_origin_origin_spawn).reshape((1, 2)), train_d_origins,
+                                 train_d_origin_diff)
+    tra_data = __generate_test_data(cl_se, train_d_points, train_d_diff)
 
     # generate color dict
-    labels = np.unique(list(range(cl_se.shape[0])))
+    labels = np.unique(list(range(k)))
     if len(labels) > len(mpl_colors.TABLEAU_COLORS.keys()):
         colors = np.random.choice(list(mpl_colors.XKCD_COLORS.keys()), size=len(labels))
     else:
@@ -252,7 +283,7 @@ if __name__ == '__main__':
     color_dict = dict(zip(labels, colors))
 
     # init classifier
-    classifier = KMeansClassifier(cl_se.shape[0], tra_data)
+    classifier = KMeansClassifier(k, tra_data)
 
     # get predicted assignment of testdata
     cl_se_predicted = classifier.predict_cluster(cl_se)
@@ -261,7 +292,7 @@ if __name__ == '__main__':
     cb_center_of_mass = np.mean(classifier.optimized_code_book, axis=0)
     tra_data_center_of_mass = np.mean(tra_data, axis=0)
     # generate data to get predictions for
-    test_data = __generate_test_data(classifier.optimized_code_book, 100, diff / 4)
+    test_data = __generate_test_data(classifier.optimized_code_book, test_data_points, test_d_diff)
 
     # get prediction
     test_data_assigned = classifier.predict_cluster(test_data)
