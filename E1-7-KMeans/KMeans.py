@@ -270,7 +270,7 @@ if __name__ == '__main__':
     test_data_points = 100
 
     # classifier parameter
-    max_iterations = train_d_origins
+    max_iterations = 15
 
     #####################################################################################
     # boring stuff to test classifier and plot results
