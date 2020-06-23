@@ -7,7 +7,8 @@ import typing
 from matplotlib import colors as mpl_colors
 
 
-def __get_unique_choice(samples, choose:int):
+# noinspection DuplicatedCode
+def __get_unique_choice(samples, choose: int):
     if len(np.unique(samples)) < choose:
         raise ValueError("impossible task")
     if len(np.unique(samples)) == choose:
