@@ -252,23 +252,22 @@ if __name__ == '__main__':
     # amount origin origin descendants
     train_d_origins = 5
 
-    # amout of train data points around origin
-    train_d_points = 10
-
-    # cluster used for classifier
-    amount_cluster = train_d_origins
-
     # radius to spawn in train data origins around origin origin
     train_d_origin_diff = 50
 
+    # amout of train data points around origin
+    train_d_points = 10
     # radius to spawn train data around data origins
     train_d_diff = train_d_origin_diff / 4
+
+    # test data per cb vector
+    test_data_points = 100
 
     # radius to spawn test data around code_book vectors
     test_d_diff = train_d_origin_diff / 4
 
-    # test data per cb vector
-    test_data_points = 100
+    # cluster used for classifier
+    amount_cluster = train_d_origins
 
     # classifier parameter
     m_iterations = 15
