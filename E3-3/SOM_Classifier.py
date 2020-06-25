@@ -177,7 +177,9 @@ if __name__ == '__main__':
                                         linestyle=" ", marker="1", label=f"test data assigned to {i}")[0])
             drawings.append(ax.plot(v[0], v[1], color=cluster_color_dict[i], linestyle=" ", marker="+",
                                     label=f"network_prototype {i}")[0])
-            plt.legend(handles=drawings[len(network_plot)-1:])
+
+        plt.legend(handles=drawings[len(network_plot)-1:], bbox_to_anchor=(1.01, 1))
+        plt.subplots_adjust(left=0.1, right=.6)
         return drawings
 
     #####################################################################################
@@ -190,7 +192,7 @@ if __name__ == '__main__':
     train_d_origin_spawn = np.array([[10, 10]])
 
     # amount origin origin descendants
-    train_d_origins = 9
+    train_d_origins = 4
 
     # radius to spawn in train data origins around origin origin
     train_d_origin_diff = 2000
