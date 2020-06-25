@@ -156,8 +156,16 @@ if __name__ == '__main__':
         network_plot = networks[frame][0]
         neuron_vectors = networks[frame][1]
         # removing all old network lines
+        # it would be more elegant to set the changed data in the existing plots
+        # but it seems to be a bit buggy as well and i don't have much time left for my other stuff :/
         while len(drawings) > 0:
             drawings.pop(0)
+
+        # clear ax after each cycle otherwise there will be a ghost image of the final network
+        # for some reason it remains even if i change the data of each line in drawings manually
+        # instead of just deleting each drawing... matplotlib is weird....
+        if frame == 0:
+            ax.clear()
         # plotting updated ones
         for i, n in enumerate(network_plot):
             drawings.append(ax.plot(n[:, 0], n[:, 1],
