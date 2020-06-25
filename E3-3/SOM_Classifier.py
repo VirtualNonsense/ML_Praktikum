@@ -6,6 +6,8 @@ import logging
 import os
 import typing
 
+from matplotlib import colors as mpl_colors
+
 
 def __get_unique_choice(samples, choose: int):
     if len(np.unique(samples)) < choose:
@@ -55,17 +57,16 @@ class KohonenNetworkClassifier:
         self.prototype_map = \
             self.__generate_prototype_tensor(a_neurons, train_data.shape[-1], self.neuron_map, lower=-proto_type_spread,
                                              upper=proto_type_spread)
-        self.net_history = [self.graph_friendly_network]
+        self.net_history = [[self.graph_friendly_network, self.active_neurons]]
         self.train()
 
     def train(self):
-
         for gen in range(self.max_generations):
             lamb = np.power(self.learning_fall_off, gen) * self.learn_rate_k
             sig = np.power(self.neighbour_fall_off, gen) * self.neighbour_k
             logging.debug(f"gen: {gen + 1}: {lamb}, {sig}")
             for t_v in self.train_data:
-                a = self.active_neurons(self.prototype_map, self.neuron_map)
+                a = self.__active_neurons(self.prototype_map, self.neuron_map)
                 diff = np.linalg.norm(a - t_v, ord=self.norm, axis=1)
                 j_star = self.neuron_map[diff.argsort()[0]]
                 self.prototype_map[tuple(j_star)] += lamb * (t_v - self.prototype_map[tuple(j_star)])
@@ -73,10 +74,27 @@ class KohonenNetworkClassifier:
                 for n in neighbours:
                     n_j_star = np.exp(-np.linalg.norm(n - j_star, self.norm) / sig)
                     self.prototype_map[tuple(n)] += lamb * n_j_star * (t_v - self.prototype_map[tuple(j_star)])
-            self.net_history.append(self.graph_friendly_network)
+            self.net_history.append([self.graph_friendly_network, self.active_neurons])
+
+    def assign_to_neuron(self, data, neurons_vectors=None):
+        """
+
+        :param data:
+        :param neurons_vectors:
+        :return:
+        """
+        p = self.active_neurons if neurons_vectors is None else neurons_vectors
+        indices = np.zeros(data.shape[0])
+        for i, d in enumerate(data):
+            indices[i] += np.linalg.norm(p - d, ord=self.norm, axis=1).argsort()[0]
+        return indices
+
+    @property
+    def active_neurons(self):
+        return self.__active_neurons(self.prototype_map, self.neuron_map)
 
     @staticmethod
-    def active_neurons(prototypes, neuron_map):
+    def __active_neurons(prototypes, neuron_map):
         return np.array([prototypes[tuple(neuron)] for neuron in neuron_map])
 
     @property
@@ -133,16 +151,34 @@ class KohonenNetworkClassifier:
 
 if __name__ == '__main__':
 
-    def update_plot(frame, network, ax, lines, color="blue", marker="x", linestyle="-"):
+    def update_plot(frame, c, ax, drawings, tr_data, test_data, cluster_color_dict, network_color="blue", network_marker="x", network_line_style="-"):
+        networks = c.net_history
+        network_plot = networks[frame][0]
+        neuron_vectors = networks[frame][1]
         # removing all old network lines
-        network = network[frame]
-        while len(lines) > 0:
-            lines.pop(0)
+        while len(drawings) > 0:
+            drawings.pop(0)
         # plotting updated ones
-        for i, n in enumerate(network):
-            lines.append(ax.plot(n[:, 0], n[:, 1], color=color, marker=marker, linestyle=linestyle)[0])
-        return lines
+        for i, n in enumerate(network_plot):
+            drawings.append(ax.plot(n[:, 0], n[:, 1],
+                                    color=network_color, marker=network_marker, linestyle=network_line_style,
+                                    label="network")[0])
 
+        tr_indices = c.assign_to_neuron(tr_data, neuron_vectors)
+        te_indices = c.assign_to_neuron(test_data, neuron_vectors)
+        for i, v in enumerate(neuron_vectors):
+            v_tr_data = train_data[tr_indices == i]
+            v_te_data = test_data[te_indices == i]
+            if v_tr_data.shape[0] > 0:
+                drawings.append(ax.plot(v_tr_data[:, 0], v_tr_data[:, 1], color=cluster_color_dict[i], linestyle=" ",
+                                        marker=".", label=f"training data assigned to {i}")[0])
+            if train_data.shape[0] > 0:
+                drawings.append(ax.plot(v_te_data[:, 0], v_te_data[:, 1], color=cluster_color_dict[i],
+                                        linestyle=" ", marker="1", label=f"test data assigned to {i}")[0])
+            drawings.append(ax.plot(v[0], v[1], color=cluster_color_dict[i], linestyle=" ", marker="+",
+                                    label=f"network_prototype {i}")[0])
+            plt.legend(handles=drawings[len(network_plot)-1:])
+        return drawings
 
     #####################################################################################
     # interesting parameter to play with
@@ -164,6 +200,12 @@ if __name__ == '__main__':
 
     # radius to spawn train data around data origins
     train_d_diff = train_d_origin_diff / 5
+
+    # amout of test data points around origin
+    test_d_points = 1000
+
+    # radius to spawn train data around data origins
+    test_d_diff = train_d_origin_diff
 
     #####################################################################################
     # classifier settings
@@ -190,31 +232,30 @@ if __name__ == '__main__':
 
     # set graph style
     plt.style.use("dark_background")
+    labels = np.unique(list(range(amount_neurons)))
+    if len(labels) > len(mpl_colors.TABLEAU_COLORS.keys()):
+        colors = __get_unique_choice(list(mpl_colors.XKCD_COLORS.keys()), len(labels))
+    else:
+        colors = __get_unique_choice(list(mpl_colors.TABLEAU_COLORS.keys()), len(labels))
+    color_dict = dict(zip(labels, colors))
 
     # init test data
     train_data_seeds = __generate_test_data(train_d_origin_spawn, train_d_origins, train_d_origin_diff)
     train_data = __generate_test_data(train_data_seeds, train_d_points, train_d_diff)
-
+    test_data = __generate_test_data(train_d_origin_spawn, test_d_points, test_d_diff)
     # init plot stuff
     fig = plt.figure()
     ax0 = fig.add_subplot(1, 1, 1)
 
     #
-    network_lines = []
+    plots = []
     # init classifier
     c = KohonenNetworkClassifier(amount_neurons, train_data, generation_maximum, learn_rate_k=learning_rate,
                                  neighbour_k=neighbour_koef, learning_fall_off=learning_rate_dampening,
                                  neighbour_fall_off=neighbour_koef_dampening, proto_type_spread=prototype_spread)
     ax0.plot()
 
-    ax0.plot(c.train_data[:, 0],
-             c.train_data[:, 1],
-             linestyle=" ",
-             marker='.',
-             color="red",
-             label=f"train data assigned to")
-
-    ani = mpl.animation.FuncAnimation(fig, lambda n: update_plot(n, c.net_history, ax0, network_lines),
+    ani = mpl.animation.FuncAnimation(fig, lambda n: update_plot(n, c, ax0, plots, train_data, test_data, color_dict),
                                       interval=2 * generation_maximum,
                                       frames=len(c.net_history), blit=True)
 
