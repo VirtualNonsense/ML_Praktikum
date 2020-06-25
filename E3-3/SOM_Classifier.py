@@ -36,9 +36,16 @@ def __generate_test_data(cluster_seeds: np.ndarray, n, max_dif):
 
 
 class KohonenNetworkClassifier:
-    def __init__(self, a_neurons, train_data, max_generations, learning_rate, p_func=None):
+    def __init__(self, a_neurons, train_data, max_generations,
+                 learn_rate=2, sigma=2,
+                 mu=0.5, nu=0.5,
+                 p_func=None, norm=2):
         # assigning attributes
-        self.learning_rate = learning_rate
+        self.l_lambda = learn_rate
+        self.sigma = sigma
+        self.nu = nu
+        self.mu = mu
+        self.norm = norm
         self.max_generations = max_generations
         self.train_data = train_data
         self.a_neurons = a_neurons
@@ -46,13 +53,29 @@ class KohonenNetworkClassifier:
         self.prototype_map = self.__generate_prototype_tensor(a_neurons, train_data.shape[-1], self.neuron_map)
         self.__p_func = p_func
         self.__plot_network()
+        self.train()
+
+    def train(self):
+
+        for gen in range(self.max_generations):
+            logging.debug(f"gen: {gen+1}")
+            for t_v in self.train_data:
+                j_star = self.neuron_map[np.linalg.norm(self.active_neurons - t_v, ord=self.norm).argsort()[0]]
+                lamb = np.power(self.mu, gen) * self.l_lambda
+                self.prototype_map[tuple(j_star)] += lamb * (t_v - self.prototype_map[tuple(j_star)])
+                neighbours = self.__get_direct_neighbours(self.neuron_map, j_star, self.norm)
+                for n in neighbours:
+                    sig = np.power(self.nu, gen) * self.sigma
+                    n_j_star = np.exp(-np.linalg.norm(n-j_star, self.norm) / sig)
+                    self.prototype_map[tuple(n)] += lamb * n_j_star * (t_v - self.prototype_map[tuple(j_star)])
+            # self.__plot_network()
 
     @property
     def active_neurons(self):
         return np.array([self.prototype_map[tuple(neuron)] for neuron in self.neuron_map])
 
     @property
-    def neuron_network(self):
+    def graph_friendly_network(self):
         lines = []
         for i in range(self.neuron_map[:, 1].max() + 1):
             v = np.array([self.prototype_map[tuple(neuron)] for neuron in self.neuron_map[self.neuron_map[:, 1] == i]])
@@ -65,7 +88,7 @@ class KohonenNetworkClassifier:
 
     def __plot_network(self):
         if self.__p_func is not None:
-            self.__p_func(self.neuron_network)
+            self.__p_func(self.graph_friendly_network)
 
     @staticmethod
     def __init_map(k):
@@ -88,9 +111,8 @@ class KohonenNetworkClassifier:
         return w
 
     @staticmethod
-    def __get_direct_neighbours(neuron_map, index):
-        neuron = neuron_map[index]
-        diff = np.linalg.norm(neuron_map - neuron, ord=2, axis=1)
+    def __get_direct_neighbours(neuron_map, neuron, norm=2):
+        diff = np.linalg.norm(neuron_map - neuron, ord=norm, axis=1)
 
         is_edge = neuron[0] == neuron_map[:, 0].min() or neuron[0] == neuron_map[:, 0].max() or \
                   neuron[1] == neuron_map[:, 1].min() or neuron[1] == neuron_map[:, 1].max()
@@ -110,13 +132,14 @@ class KohonenNetworkClassifier:
 
 if __name__ == '__main__':
 
-    def update_plot(networks, ax, lines, color="blue", marker="x", linestyle="-"):
+    def update_plot(network, fig, ax, lines, color="blue", marker="x", linestyle="-"):
         # removing all old network lines
-        for line in lines:
-            line.pop(0)
+        while len(lines) > 0:
+            lines.pop(0)
         # plotting updated ones
-        for i, n in enumerate(networks):
+        for i, n in enumerate(network):
             lines.append(ax.plot(n[:, 0], n[:, 1], color=color, marker=marker, linestyle=linestyle)[0])
+        fig.canvas.draw()
         return
 
 
@@ -133,7 +156,7 @@ if __name__ == '__main__':
     train_d_origins = 9
 
     # radius to spawn in train data origins around origin origin
-    train_d_origin_diff = 50
+    train_d_origin_diff = 3
 
     # amout of train data points around origin
     train_d_points = 10
@@ -148,7 +171,7 @@ if __name__ == '__main__':
     amount_neurons = train_d_origins
 
     # the maximum amount of trainings iterations allowed
-    generation_maximum = 100
+    generation_maximum = 10
 
     # function used for neuron displacement
     learning_rate = lambda x: 1 / x
@@ -157,7 +180,7 @@ if __name__ == '__main__':
     # boring stuff to test classifier and plot results
     #####################################################################################
     # set loglevel
-    logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+    logging.basicConfig(level=os.environ.get("LOGLEVEL", "DEBUG"))
 
     # set graph style
     plt.style.use("dark_background")
@@ -173,8 +196,8 @@ if __name__ == '__main__':
     #
     network_lines = []
     # init classifier
-    c = KohonenNetworkClassifier(amount_neurons, train_data, generation_maximum, learning_rate,
-                                 p_func=lambda network: update_plot(network, ax0, network_lines))
+    c = KohonenNetworkClassifier(amount_neurons, train_data, generation_maximum,
+                                 p_func=lambda network: update_plot(network, fig, ax0, network_lines))
 
     print(network_lines)
     plt.show()
