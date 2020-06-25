@@ -44,18 +44,17 @@ class KohonenNetworkClassifier:
                  learn_rate_k: float, neighbour_k: float,
                  learning_fall_off: float, neighbour_fall_off: float, norm: int = 2, proto_type_spread: float = 1000):
         """
-        This classifier creates a net of neurons and performs several training iterations (until max_generations is
-        reached)
-
         :param a_neurons: amount of neurons
         :param train_data: input data for training
         :param max_generations: amount of training iterations
-        :param learn_rate_k:
-        :param neighbour_k:
-        :param learning_fall_off:
-        :param neighbour_fall_off:
-        :param norm: which norm should be use eucl
-        :param proto_type_spread:
+        :param learn_rate_k: [OPTIONAl] scales the length of the "jump" in the direction of the selected training vector
+        :param neighbour_k: [OPTIONAl] determines how much network neighbours are affected by the change of a neuron
+        :param learning_fall_off: [OPTIONAl] should be in ]0, 1[ determines how fast the network will harden
+                                  the smaller the fast the fall off
+        :param neighbour_fall_off: [OPTIONAl] should be in ]0, 1[ determines how fast the neighbours will harden
+        :param norm: [OPTIONAl] e.g. euclidean distance
+        :param proto_type_spread: [OPTIONAL] side length of a square, with zero in it's center in which the prototypes
+        spawn in
         """
         # assigning attributes
         self.proto_type_spread = proto_type_spread
@@ -75,7 +74,6 @@ class KohonenNetworkClassifier:
         self.train()
 
     def train(self):
-
         for gen in range(self.max_generations):
             # calc learning koef
             lamb = np.power(self.learning_fall_off, gen) * self.learn_rate_k
@@ -181,7 +179,8 @@ class KohonenNetworkClassifier:
 
 if __name__ == '__main__':
 
-    def update_plot(frame, c, ax, drawings, tr_data, test_data, cluster_color_dict, network_color="blue", network_marker="x", network_line_style="-"):
+    def update_plot(frame, c, ax, drawings, tr_data, test_data, cluster_color_dict, network_color="blue",
+                    network_marker="x", network_line_style="-"):
         networks = c.net_history
         network_plot = networks[frame][0]
         neuron_vectors = networks[frame][1]
