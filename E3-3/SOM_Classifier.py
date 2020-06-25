@@ -40,9 +40,23 @@ def __generate_test_data(cluster_seeds: np.ndarray, n, max_dif):
 
 
 class KohonenNetworkClassifier:
-    def __init__(self, a_neurons, train_data, max_generations,
-                 learn_rate_k, neighbour_k,
-                 learning_fall_off, neighbour_fall_off, norm=2, proto_type_spread=1000):
+    def __init__(self, a_neurons: int, train_data: np.ndarray, max_generations: int,
+                 learn_rate_k: float, neighbour_k: float,
+                 learning_fall_off: float, neighbour_fall_off: float, norm: int = 2, proto_type_spread: float = 1000):
+        """
+        This classifier creates a net of neurons and performs several training iterations (until max_generations is
+        reached)
+
+        :param a_neurons: amount of neurons
+        :param train_data: input data for training
+        :param max_generations: amount of training iterations
+        :param learn_rate_k:
+        :param neighbour_k:
+        :param learning_fall_off:
+        :param neighbour_fall_off:
+        :param norm: which norm should be use eucl
+        :param proto_type_spread:
+        """
         # assigning attributes
         self.proto_type_spread = proto_type_spread
         self.learn_rate_k = learn_rate_k
@@ -61,26 +75,38 @@ class KohonenNetworkClassifier:
         self.train()
 
     def train(self):
+
         for gen in range(self.max_generations):
+            # calc learning koef
             lamb = np.power(self.learning_fall_off, gen) * self.learn_rate_k
+
+            # calc neighbour koef
             sig = np.power(self.neighbour_fall_off, gen) * self.neighbour_k
             logging.debug(f"gen: {gen + 1}: {lamb}, {sig}")
             for t_v in self.train_data:
+                # get nearest neuron
                 a = self.__active_neurons(self.prototype_map, self.neuron_map)
                 diff = np.linalg.norm(a - t_v, ord=self.norm, axis=1)
                 j_star = self.neuron_map[diff.argsort()[0]]
+
+                # calc new prototype
                 self.prototype_map[tuple(j_star)] += lamb * (t_v - self.prototype_map[tuple(j_star)])
+
+                # get neighbours
                 neighbours = self.__get_direct_neighbours(self.neuron_map, j_star, self.norm)
                 for n in neighbours:
+                    # calc new neighbour prototype
                     n_j_star = np.exp(-np.linalg.norm(n - j_star, self.norm) / sig)
                     self.prototype_map[tuple(n)] += lamb * n_j_star * (t_v - self.prototype_map[tuple(j_star)])
+
+            # add current state to history (for plots only)
             self.net_history.append([self.graph_friendly_network, self.active_neurons])
 
     def assign_to_neuron(self, data, neurons_vectors=None):
         """
-
+        indices to assign data to active neurons
         :param data:
-        :param neurons_vectors:
+        :param neurons_vectors: eg. an old state of active_neurons (interesting for plotting)
         :return:
         """
         p = self.active_neurons if neurons_vectors is None else neurons_vectors
@@ -99,6 +125,10 @@ class KohonenNetworkClassifier:
 
     @property
     def graph_friendly_network(self):
+        """
+        returns one line/ndarray for each row and column
+        :return:
+        """
         lines = []
         for i in range(self.neuron_map[:, 1].max() + 1):
             v = np.array([self.prototype_map[tuple(neuron)] for neuron in self.neuron_map[self.neuron_map[:, 1] == i]])
@@ -143,7 +173,7 @@ class KohonenNetworkClassifier:
 
         if is_edge:
             if is_corner:
-                # return indices of neighbours,
+                # return indices of neighbours, ignore the first pos, because it's neuron
                 return np.take(neuron_map, diff.argsort()[1:3], axis=0)
             return np.take(neuron_map, diff.argsort()[1:4], axis=0)
         return np.take(neuron_map, diff.argsort()[1:5], axis=0)
@@ -200,7 +230,7 @@ if __name__ == '__main__':
     train_d_origin_spawn = np.array([[10, 10]])
 
     # amount origin origin descendants
-    train_d_origins = 4
+    train_d_origins = 6
 
     # radius to spawn in train data origins around origin origin
     train_d_origin_diff = 2000
@@ -253,6 +283,7 @@ if __name__ == '__main__':
     train_data_seeds = __generate_test_data(train_d_origin_spawn, train_d_origins, train_d_origin_diff)
     train_data = __generate_test_data(train_data_seeds, train_d_points, train_d_diff)
     test_data = __generate_test_data(train_d_origin_spawn, test_d_points, test_d_diff)
+
     # init plot stuff
     fig = plt.figure()
     ax0 = fig.add_subplot(1, 1, 1)
