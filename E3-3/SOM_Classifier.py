@@ -69,7 +69,7 @@ class KohonenNetworkClassifier:
         self.neuron_map = self.__init_map(self.a_neurons)
         self.prototype_map = \
             self.__generate_prototype_tensor(a_neurons, train_data.shape[-1], self.neuron_map, lower=-proto_type_spread,
-                                             upper=proto_type_spread)
+                                             upper=proto_type_spread, t_mean=np.mean(train_data, axis=0))
         self.net_history = [[self.graph_friendly_network, self.active_neurons]]
         self.train()
 
@@ -152,9 +152,9 @@ class KohonenNetworkClassifier:
         return a
 
     @staticmethod
-    def __generate_prototype_tensor(k, m, neuron_map, upper, lower):
+    def __generate_prototype_tensor(k, m, neuron_map, upper, lower, t_mean):
         shape = (neuron_map[:, 0].max() + 1, neuron_map[:, 1].max() + 1, m)
-        w = np.random.randint(lower, upper, shape) + np.random.choice([-1, 1], 2) * np.random.random(shape)
+        w = t_mean + np.random.randint(lower, upper, shape) + np.random.choice([-1, 1], 2) * np.random.random(shape)
         return w
 
     @staticmethod
@@ -232,7 +232,7 @@ if __name__ == '__main__':
     train_d_origins = 6
 
     # radius to spawn in train data origins around origin origin
-    train_d_origin_diff = 2000
+    train_d_origin_diff = 10
 
     # amout of train data points around origin
     train_d_points = 100
@@ -261,7 +261,7 @@ if __name__ == '__main__':
     neighbour_koef = .5
     neighbour_koef_dampening = 0.8
 
-    prototype_spread = 1000
+    prototype_spread = train_d_origin_diff/2
 
     #####################################################################################
     # boring stuff to test classifier and plot results
