@@ -240,7 +240,7 @@ if __name__ == '__main__':
     # radius to spawn train data around data origins
     train_d_diff = train_d_origin_diff / 5
 
-    # amout of test data points around origin
+    # amount of test data points around origin
     test_d_points = 1000
 
     # radius to spawn train data around data origins
