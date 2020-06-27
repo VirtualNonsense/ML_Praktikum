@@ -143,8 +143,9 @@ class KohonenNetworkClassifier:
         lines = np.floor(np.sqrt(k))
         columns = np.ceil(np.sqrt(k))
         a_index = 0
-        for l_i in np.arange(lines, dtype=int):
-            for c_i in np.arange(columns, dtype=int):
+        # lines/columns + 1 np.arange interprets this parameters as size otherwise
+        for l_i in np.arange(lines+1, dtype=int):
+            for c_i in np.arange(columns+1, dtype=int):
                 if a_index >= a.shape[0]:
                     return a
                 a[a_index] += np.array([l_i, c_i])
