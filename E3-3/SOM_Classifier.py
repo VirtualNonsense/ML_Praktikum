@@ -229,7 +229,7 @@ if __name__ == '__main__':
     train_d_origin_spawn = np.array([[10, 10]])
 
     # amount origin origin descendants
-    train_d_origins = 6
+    train_d_origins = 10
 
     # radius to spawn in train data origins around origin origin
     train_d_origin_diff = 10
@@ -238,7 +238,7 @@ if __name__ == '__main__':
     train_d_points = 100
 
     # radius to spawn train data around data origins
-    train_d_diff = train_d_origin_diff / 5
+    train_d_diff = train_d_origin_diff / 6
 
     # amount of test data points around origin
     test_d_points = 1000
@@ -258,7 +258,7 @@ if __name__ == '__main__':
     learning_rate = 1
     learning_rate_dampening = 0.9
 
-    neighbour_koef = .5
+    neighbour_koef = 9
     neighbour_koef_dampening = 0.8
 
     prototype_spread = train_d_origin_diff/2
@@ -293,7 +293,6 @@ if __name__ == '__main__':
     c = KohonenNetworkClassifier(amount_neurons, train_data, generation_maximum, learn_rate_k=learning_rate,
                                  neighbour_k=neighbour_koef, learning_fall_off=learning_rate_dampening,
                                  neighbour_fall_off=neighbour_koef_dampening, proto_type_spread=prototype_spread)
-    ax0.plot()
 
     ani = mpl.animation.FuncAnimation(fig, lambda n: update_plot(n, c, ax0, plots, train_data, test_data, color_dict),
                                       interval=2 * generation_maximum,
