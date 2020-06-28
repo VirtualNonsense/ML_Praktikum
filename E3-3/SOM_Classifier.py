@@ -180,11 +180,12 @@ class KohonenNetworkClassifier:
 
 if __name__ == '__main__':
 
-    def update_plot(frame, c, ax, drawings, tr_data, test_data, cluster_color_dict, network_color="blue",
+    def update_plot(frame, c, ax, ax_title, drawings, tr_data, test_data, cluster_color_dict, network_color="blue",
                     network_marker="x", network_line_style="-"):
         networks = c.net_history
         network_plot = networks[frame][0]
         neuron_vectors = networks[frame][1]
+        ax_title.set_text(f"Generation {frame + 1}")
         # removing all old network lines
         # it would be more elegant to set the changed data in the existing plots
         # but it seems to be a bit buggy as well and i don't have much time left for my other stuff :/
@@ -216,9 +217,10 @@ if __name__ == '__main__':
             drawings.append(ax.plot(v[0], v[1], color=cluster_color_dict[i], linestyle=" ", marker="+",
                                     label=f"network_prototype {i}")[0])
 
-        plt.legend(handles=drawings[len(network_plot)-1:], bbox_to_anchor=(1.01, 1))
+        plt.legend(handles=drawings[len(network_plot) - 1:], bbox_to_anchor=(1.01, 1))
         plt.subplots_adjust(left=0.1, right=.6)
-        return drawings
+        return drawings + [title]
+
 
     #####################################################################################
     # interesting parameter to play with
@@ -295,8 +297,13 @@ if __name__ == '__main__':
                                  neighbour_k=neighbour_koef, learning_fall_off=learning_rate_dampening,
                                  neighbour_fall_off=neighbour_koef_dampening, proto_type_spread=prototype_spread)
 
-    ani = mpl.animation.FuncAnimation(fig, lambda n: update_plot(n, c, ax0, plots, train_data, test_data, color_dict),
+    title = ax0.text(0.05, 0.92, "", bbox={'facecolor': 'w', 'alpha': 0.5, 'pad': 5},
+                     transform=ax0.transAxes, ha="left")
+
+    ani = mpl.animation.FuncAnimation(fig,
+                                      lambda n: update_plot(n, c, ax0, title, plots, train_data, test_data, color_dict),
                                       interval=2 * generation_maximum,
-                                      frames=len(c.net_history), blit=True)
+                                      frames=len(c.net_history),
+                                      blit=True)
 
     plt.show()
