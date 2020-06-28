@@ -41,27 +41,23 @@ def __generate_test_data(cluster_seeds: np.ndarray, n, max_dif):
 
 class KohonenNetworkClassifier:
     def __init__(self, a_neurons: int, train_data: np.ndarray, max_generations: int,
-                 learn_rate_k: float, neighbour_k: float,
-                 learning_fall_off: float, neighbour_fall_off: float, norm: int = 2, proto_type_spread: float = 1000):
+                 learn_rate_function, neighbour_function, norm: int = 2, proto_type_spread: float = 1000):
         """
         :param a_neurons: amount of neurons
         :param train_data: input data for training
         :param max_generations: amount of training iterations
-        :param learn_rate_k: [OPTIONAl] scales the length of the "jump" in the direction of the selected training vector
-        :param neighbour_k: [OPTIONAl] determines how much network neighbours are affected by the change of a neuron
-        :param learning_fall_off: [OPTIONAl] should be in ]0, 1[ determines how fast the network will harden
-                                  the smaller the fast the fall off
-        :param neighbour_fall_off: [OPTIONAl] should be in ]0, 1[ determines how fast the neighbours will harden
-        :param norm: [OPTIONAl] e.g. euclidean distance
+        :param learn_rate_function: f(generation): N_0 -> R. The return of this function scales the amount of change
+        applied in a given generation. If it falls over time/generation the network will harden
+        :param neighbour_function:  f(generation): N_0 -> R. The return of this function scales the amount of change
+        applied to the neighbours of node in a given generation.
+        :param norm: [OPTIONAl] sets the way distances are calculated e.g. 2 == euclidean distance
         :param proto_type_spread: [OPTIONAL] side length of a square, with zero in it's center in which the prototypes
         spawn in
         """
         # assigning attributes
         self.proto_type_spread = proto_type_spread
-        self.learn_rate_k = learn_rate_k
-        self.neighbour_k = neighbour_k
-        self.neighbour_fall_off = neighbour_fall_off
-        self.learning_fall_off = learning_fall_off
+        self.learn_rate_f = learn_rate_function
+        self.neighbour_f = neighbour_function
         self.norm = norm
         self.max_generations = max_generations
         self.train_data = train_data
@@ -76,10 +72,10 @@ class KohonenNetworkClassifier:
     def train(self):
         for gen in range(self.max_generations):
             # calc learning koef
-            lamb = np.power(self.learning_fall_off, gen) * self.learn_rate_k
+            lamb = self.learn_rate_f(gen)
 
             # calc neighbour koef
-            sig = np.power(self.neighbour_fall_off, gen) * self.neighbour_k
+            sig = self.neighbour_f(gen)
             logging.debug(f"gen: {gen + 1}: {lamb}, {sig}")
             for t_v in self.train_data:
                 # get nearest neuron
@@ -144,8 +140,8 @@ class KohonenNetworkClassifier:
         columns = np.ceil(np.sqrt(k))
         a_index = 0
         # lines/columns + 1 np.arange interprets this parameters as size otherwise
-        for l_i in np.arange(lines+1, dtype=int):
-            for c_i in np.arange(columns+1, dtype=int):
+        for l_i in np.arange(lines + 1, dtype=int):
+            for c_i in np.arange(columns + 1, dtype=int):
                 if a_index >= a.shape[0]:
                     return a
                 a[a_index] += np.array([l_i, c_i])
@@ -235,7 +231,7 @@ if __name__ == '__main__':
     train_d_origins = 10
 
     # radius to spawn in train data origins around origin origin
-    train_d_origin_diff = 10
+    train_d_origin_diff = 20
 
     # amout of train data points around origin
     train_d_points = 100
@@ -259,12 +255,14 @@ if __name__ == '__main__':
     generation_maximum = 100
 
     learning_rate = 1
-    learning_rate_dampening = 0.9
+    learning_rate_dampening = 0.5
+    lf = lambda gen: np.exp(-learning_rate_dampening*gen) * learning_rate
 
-    neighbour_koef = 9
-    neighbour_koef_dampening = 0.8
+    neighbour_koef = 6
+    neighbour_koef_dampening = .6
+    nf = lambda gen: np.exp(-neighbour_koef_dampening * gen) * neighbour_koef
 
-    prototype_spread = train_d_origin_diff/2
+    prototype_spread = train_d_origin_diff / 2
 
     #####################################################################################
     # boring stuff to test classifier and plot results
@@ -293,9 +291,8 @@ if __name__ == '__main__':
     #
     plots = []
     # init classifier
-    c = KohonenNetworkClassifier(amount_neurons, train_data, generation_maximum, learn_rate_k=learning_rate,
-                                 neighbour_k=neighbour_koef, learning_fall_off=learning_rate_dampening,
-                                 neighbour_fall_off=neighbour_koef_dampening, proto_type_spread=prototype_spread)
+    c = KohonenNetworkClassifier(amount_neurons, train_data, generation_maximum, learn_rate_function=lf,
+                                 neighbour_function=nf, proto_type_spread=prototype_spread)
 
     title = ax0.text(0.05, 0.92, "", bbox={'facecolor': 'w', 'alpha': 0.5, 'pad': 5},
                      transform=ax0.transAxes, ha="left")
