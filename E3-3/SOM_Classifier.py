@@ -136,12 +136,12 @@ class KohonenNetworkClassifier:
     @staticmethod
     def __init_map(k):
         a = np.zeros((k, 2), dtype=int)
-        lines = np.floor(np.sqrt(k))
+        lines = np.ceil(np.sqrt(k))
         columns = np.ceil(np.sqrt(k))
         a_index = 0
         # lines/columns + 1 np.arange interprets this parameters as size otherwise
-        for l_i in np.arange(lines + 1, dtype=int):
-            for c_i in np.arange(columns + 1, dtype=int):
+        for l_i in np.arange(lines, dtype=int):
+            for c_i in np.arange(columns, dtype=int):
                 if a_index >= a.shape[0]:
                     return a
                 a[a_index] += np.array([l_i, c_i])
