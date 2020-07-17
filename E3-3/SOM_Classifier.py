@@ -41,7 +41,7 @@ def __generate_test_data(cluster_seeds: np.ndarray, n, max_dif):
 
 class KohonenNetworkClassifier:
     def __init__(self, a_neurons: int, train_data: np.ndarray, max_generations: int,
-                 learn_rate_function, neighbour_function, norm: int = 2, proto_type_spread: float = 1000):
+                 learn_rate_function, neighbour_function, norm: int = 2, proto_type_spread: float = 1000, epsilon=0.):
         """
         :param a_neurons: amount of neurons
         :param train_data: input data for training
@@ -62,6 +62,7 @@ class KohonenNetworkClassifier:
         self.max_generations = max_generations
         self.train_data = train_data
         self.a_neurons = a_neurons
+        self.epsilon = epsilon
         self.neuron_map = self.__init_map(self.a_neurons)
         self.prototype_map = \
             self.__generate_prototype_tensor(a_neurons, train_data.shape[-1], self.neuron_map, lower=-proto_type_spread,
@@ -84,8 +85,12 @@ class KohonenNetworkClassifier:
                 j_star = self.neuron_map[diff.argsort()[0]]
 
                 # calc new prototype
-                self.prototype_map[tuple(j_star)] += lamb * (t_v - self.prototype_map[tuple(j_star)])
+                delta = lamb * (t_v - self.prototype_map[tuple(j_star)])
+                if np.linalg.norm(delta, ord=2) < self.epsilon:
+                    logging.debug(f'{np.linalg.norm(delta, ord=2)} < {self.epsilon}: training complete.')
+                    return
 
+                self.prototype_map[tuple(j_star)] += delta
                 # get neighbours
                 neighbours = self.__get_direct_neighbours(self.neuron_map, j_star, self.norm)
                 for n in neighbours:
@@ -292,14 +297,14 @@ if __name__ == '__main__':
     plots = []
     # init classifier
     c = KohonenNetworkClassifier(amount_neurons, train_data, generation_maximum, learn_rate_function=lf,
-                                 neighbour_function=nf, proto_type_spread=prototype_spread)
+                                 neighbour_function=nf, proto_type_spread=prototype_spread, epsilon=1e-3)
 
     title = ax0.text(0.05, 0.92, "", bbox={'facecolor': 'w', 'alpha': 0.5, 'pad': 5},
                      transform=ax0.transAxes, ha="left")
 
     ani = mpl.animation.FuncAnimation(fig,
                                       lambda n: update_plot(n, c, ax0, title, plots, train_data, test_data, color_dict),
-                                      interval=2 * generation_maximum,
+                                      interval=300,
                                       frames=len(c.net_history),
                                       blit=True)
 
