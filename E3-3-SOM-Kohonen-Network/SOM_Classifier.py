@@ -1,11 +1,10 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import matplotlib.animation
 import logging
 import os
-import typing
 
+import matplotlib as mpl
+import matplotlib.animation
+import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib import colors as mpl_colors
 
 
@@ -17,10 +16,10 @@ def __get_unique_choice(samples, choose: int):
     a = []
     for _i in range(choose):
         while True:
-            c = np.random.choice(np.unique(samples), size=1)
-            if c not in a:
+            choice = np.random.choice(np.unique(samples), size=1)
+            if choice not in a:
                 break
-        a.append(c[0])
+        a.append(choice[0])
     return a
 
 
@@ -40,11 +39,11 @@ def __generate_test_data(cluster_seeds: np.ndarray, n, max_dif):
 
 
 class KohonenNetworkClassifier:
-    def __init__(self, a_neurons: int, train_data: np.ndarray, max_generations: int,
+    def __init__(self, a_neurons: int, training_data: np.ndarray, max_generations: int,
                  learn_rate_function, neighbour_function, norm: int = 2, proto_type_spread: float = 1000, epsilon=0.):
         """
         :param a_neurons: amount of neurons
-        :param train_data: input data for training
+        :param training_data: input data for training
         :param max_generations: amount of training iterations
         :param learn_rate_function: f(generation): N_0 -> R. The return of this function scales the amount of change
         applied in a given generation. If it falls over time/generation the network will harden
@@ -60,22 +59,22 @@ class KohonenNetworkClassifier:
         self.neighbour_f = neighbour_function
         self.norm = norm
         self.max_generations = max_generations
-        self.train_data = train_data
+        self.train_data = training_data
         self.a_neurons = a_neurons
         self.epsilon = epsilon
         self.neuron_map = self.__init_map(self.a_neurons)
         self.prototype_map = \
-            self.__generate_prototype_tensor(a_neurons, train_data.shape[-1], self.neuron_map, lower=-proto_type_spread,
-                                             upper=proto_type_spread, t_mean=np.mean(train_data, axis=0))
+            self.__generate_prototype_tensor(training_data.shape[-1], self.neuron_map, lower=-proto_type_spread,
+                                             upper=proto_type_spread, t_mean=np.mean(training_data, axis=0))
         self.net_history = [[self.graph_friendly_network, self.active_neurons]]
         self.train()
 
     def train(self):
         for gen in range(self.max_generations):
-            # calc learning koef
+            # calc learning coefficient
             lamb = self.learn_rate_f(gen)
 
-            # calc neighbour koef
+            # calc neighbour coefficient
             sig = self.neighbour_f(gen)
             logging.debug(f"gen: {gen + 1}: {lamb}, {sig}")
             for t_v in self.train_data:
@@ -125,7 +124,7 @@ class KohonenNetworkClassifier:
     @property
     def graph_friendly_network(self):
         """
-        returns one line/ndarray for each row and column
+        returns one line/nd array for each row and column
         :return:
         """
         lines = []
@@ -144,7 +143,6 @@ class KohonenNetworkClassifier:
         lines = np.ceil(np.sqrt(k))
         columns = np.ceil(np.sqrt(k))
         a_index = 0
-        # lines/columns + 1 np.arange interprets this parameters as size otherwise
         for l_i in np.arange(lines, dtype=int):
             for c_i in np.arange(columns, dtype=int):
                 if a_index >= a.shape[0]:
@@ -154,7 +152,7 @@ class KohonenNetworkClassifier:
         return a
 
     @staticmethod
-    def __generate_prototype_tensor(k, m, neuron_map, upper, lower, t_mean):
+    def __generate_prototype_tensor(m, neuron_map, upper, lower, t_mean):
         shape = (neuron_map[:, 0].max() + 1, neuron_map[:, 1].max() + 1, m)
         w = t_mean + np.random.randint(lower, upper, shape) + np.random.choice([-1, 1], 2) * np.random.random(shape)
         return w
@@ -181,9 +179,10 @@ class KohonenNetworkClassifier:
 
 if __name__ == '__main__':
 
-    def update_plot(frame, c, ax, ax_title, drawings, tr_data, test_data, cluster_color_dict, network_color="blue",
+    def update_plot(frame, classifier, ax, ax_title, drawings, tr_data, testing_data, cluster_color_dict,
+                    network_color="blue",
                     network_marker="x", network_line_style="-"):
-        networks = c.net_history
+        networks = classifier.net_history
         network_plot = networks[frame][0]
         neuron_vectors = networks[frame][1]
         ax_title.set_text(f"Generation {frame + 1}")
@@ -204,11 +203,11 @@ if __name__ == '__main__':
                                     color=network_color, marker=network_marker, linestyle=network_line_style,
                                     label="network")[0])
 
-        tr_indices = c.assign_to_neuron(tr_data, neuron_vectors)
-        te_indices = c.assign_to_neuron(test_data, neuron_vectors)
+        tr_indices = classifier.assign_to_neuron(tr_data, neuron_vectors)
+        te_indices = classifier.assign_to_neuron(testing_data, neuron_vectors)
         for i, v in enumerate(neuron_vectors):
             v_tr_data = train_data[tr_indices == i]
-            v_te_data = test_data[te_indices == i]
+            v_te_data = testing_data[te_indices == i]
             if v_tr_data.shape[0] > 0:
                 drawings.append(ax.plot(v_tr_data[:, 0], v_tr_data[:, 1], color=cluster_color_dict[i], linestyle=" ",
                                         marker=".", label=f"training data assigned to {i}")[0])
@@ -238,7 +237,7 @@ if __name__ == '__main__':
     # radius to spawn in train data origins around origin origin
     train_d_origin_diff = 20
 
-    # amout of train data points around origin
+    # amount of train data points around origin
     train_d_points = 100
 
     # radius to spawn train data around data origins
@@ -261,11 +260,11 @@ if __name__ == '__main__':
 
     learning_rate = 1
     learning_rate_dampening = 0.5
-    lf = lambda gen: np.exp(-learning_rate_dampening*gen) * learning_rate
+    lf = lambda gen: np.exp(-learning_rate_dampening * gen) * learning_rate
 
-    neighbour_koef = 6
-    neighbour_koef_dampening = .6
-    nf = lambda gen: np.exp(-neighbour_koef_dampening * gen) * neighbour_koef
+    neighbour_coefficient = 6
+    neighbour_coefficient_dampening = .6
+    nf = lambda gen: np.exp(-neighbour_coefficient_dampening * gen) * neighbour_coefficient
 
     prototype_spread = train_d_origin_diff / 2
 
